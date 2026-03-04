@@ -1,0 +1,50 @@
+ 
+ 
+ function vanbar(){
+  return(
+    <>
+    <div>
+
+ {/*<a  className="navbar-logo-link">
+            <img src={logo1} alt="logo1" className="navbar-logo"></img>
+            </a>8*/}
+            <ul className="navbar-menu-right">
+              <li>
+                <Link to="/logout" className="button-link">Logout</Link>
+              
+              </li>
+              <li>
+                 <Link to="/login" className="button-link-login">Login</Link>
+              </li>
+              <li>
+                 <Link to="/register" className="button-link">Register</Link>
+              </li>
+            
+            
+            </ul>
+
+            <ul className="navbar-menu-left">
+              <li>
+                <Link to="/why">Why Us</Link>
+              
+              </li>
+              <li>
+                 <Link to="/about">About</Link>
+              </li>
+              <li>
+                 <Link to="/contact">Contact</Link>
+              </li>
+            
+            
+            </ul>
+
+
+
+    </div>
+    
+    </>
+  )
+ }export default vanbar
+ 
+ 
+ 

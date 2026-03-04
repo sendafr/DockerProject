@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  api:
+    build: ./src_authentic
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    command: gunicorn --bind 0.0.0.0:8000 authentic.wsgi:application
+    volumes:
+      - ./src_authentic:/src_authentic
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production  # ← Moved here, not in args
+    ports:
+      - "5173:80"  # ← Access at localhost:5173, container runs on 80
+    volumes:
+      - ./frontend:/frontend
+    # Remove the command line - let Dockerfile CMD run nginx
+
+volumes:
+  postgres_data:
