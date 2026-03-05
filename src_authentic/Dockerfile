@@ -1,6 +1,7 @@
 FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1
+ENV CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://localhost:5173
 WORKDIR /src_authentic
 
 RUN apt-get update && apt-get install -y \
