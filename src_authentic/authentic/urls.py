@@ -28,6 +28,7 @@ from api.views import*
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('api.urls')),
+    path('vdeo/auth/', include('video.urls')),
 
     #path('create_user/', create_user,name="create_user"),
     #path('api/token/', TokenObtainPairView.as_view(),name="token_obtain_pair"),
