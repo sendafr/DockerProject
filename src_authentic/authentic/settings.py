@@ -72,6 +72,12 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'authentic.urls'
 
+# CSRF Configuration
+CSRF_TRUSTED_ORIGINS = os.environ.get(
+    'CSRF_TRUSTED_ORIGINS',
+    'http://localhost:8000,http://localhost:5173'
+).split(',')
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
