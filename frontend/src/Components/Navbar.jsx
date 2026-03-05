@@ -42,7 +42,7 @@ export default function Navbar() {
             <Link to="/" className="navLink">Home</Link>
           </li>
           <li>
-            <Link to="/" className="navLink">VideoUpload</Link>
+            <Link to="/videoupload" className="navLink">VideoUpload</Link>
           </li>
 
           {isAuth ? (
