@@ -41,6 +41,9 @@ export default function Navbar() {
           <li>
             <Link to="/" className="navLink">Home</Link>
           </li>
+          <li>
+            <Link to="/" className="navLink">VideoUpload</Link>
+          </li>
 
           {isAuth ? (
             <>
