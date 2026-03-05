@@ -9,9 +9,13 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-
+  
   api:
     image: ghcr.io/sendafr/authentication-api:latest
+    environment:
+      - ALLOWED_HOSTS=localhost,127.0.0.1,api,0.0.0.0
+      - DEBUG=True  # Optional: helps with error messages
+    # ... rest of your config
     ports:
       - "8000:8000"
     env_file:
