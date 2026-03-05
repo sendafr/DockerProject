@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   db:
     image: postgres:15
@@ -11,47 +9,29 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    restart: unless-stopped
 
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile-backend
-    environment:
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_HOST=db
-      - DB_PORT=5432
-      - ALLOWED_HOSTS=localhost,127.0.0.1,api,0.0.0.0
-      - DEBUG=True
-      - CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://localhost:5173
-      - CORS_ALLOWED_ORIGINS=http://localhost:5173
+    build: ./src_authentic
     ports:
       - "8000:8000"
     env_file:
       - .env
     depends_on:
       - db
+    command: gunicorn --bind 0.0.0.0:8000 authentic.wsgi:application
     volumes:
       - ./src_authentic:/src_authentic
-    restart: unless-stopped
-    command: >
-      sh -c "python manage.py migrate &&
-             gunicorn --bind 0.0.0.0:8000 authentic.wsgi:application"
 
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile-frontend
-    environment:
-      - VITE_API_BASE_URL=http://localhost:8000/api
+      dockerfile: Dockerfile
+      target: production  # ← Moved here, not in args
     ports:
-      - "5173:80"
-    depends_on:
-      - api
-    restart: unless-stopped
+      - "5173:80"  # ← Access at localhost:5173, container runs on 80
+    volumes:
+      - ./frontend:/frontend
+    # Remove the command line - let Dockerfile CMD run nginx
 
 volumes:
   postgres_data:
