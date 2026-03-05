@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:15
+    image: ghcr.io/sendafr/authentication-db:latest
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -9,9 +9,14 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-
+  
   api:
-    build: ./src_authentic
+    image: ghcr.io/sendafr/authentication-api:latest
+    environment:
+      - ALLOWED_HOSTS=localhost,127.0.0.1,api,0.0.0.0
+      - DEBUG=True  # Optional: helps with error messages
+    # ... rest of your config
+      - CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://localhost:5173
     ports:
       - "8000:8000"
     env_file:
@@ -23,15 +28,11 @@ services:
       - ./src_authentic:/src_authentic
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      target: production  # ← Moved here, not in args
+    image: ghcr.io/sendafr/authentication-frontend:latest
     ports:
-      - "5173:80"  # ← Access at localhost:5173, container runs on 80
+      - "5173:80"
     volumes:
       - ./frontend:/frontend
-    # Remove the command line - let Dockerfile CMD run nginx
 
 volumes:
   postgres_data:
