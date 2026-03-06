@@ -1,53 +1,156 @@
-from django.shortcuts import render
-from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework import status
+from .models import Video   # ✅ Import from video.models, not api.models
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
-from api.models import Video
+from .models import Video
 from .serializers import VideoSerializer
 
 
+class VideoUploadView(APIView):
+    """Handle video uploads"""
+    permission_classes = [IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser)
 
-# CREATE - Upload a new video
-@api_view(['POST'])
-def create_video(request):
-    if request.method == 'POST':
-        serializer = VideoSerializer(data=request.data, context={'request': request})
+    def post(self, request):
+        """Upload a new video"""
+        serializer = VideoSerializer(
+            data=request.data,
+            context={'request': request}
+        )
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {
+                    'status': 'success',
+                    'message': 'Video uploaded successfully',
+                    'data': serializer.data
+                },
+                status=status.HTTP_201_CREATED
+            )
+        return Response(
+            {
+                'status': 'error',
+                'message': 'Upload failed',
+                'errors': serializer.errors
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
-# READ - Get all videos
-@api_view(['GET'])
-def list_videos(request):
-    videos = Video.objects.all()
-    serializer = VideoSerializer(videos, many=True, context={'request': request})
-    return Response(serializer.data, status=status.HTTP_200_OK)
 
-# READ - Get a single video by ID
-@api_view(['GET'])
-def get_video(request, pk):
-    video = get_object_or_404(Video, pk=pk)
-    serializer = VideoSerializer(video, context={'request': request})
-    return Response(serializer.data, status=status.HTTP_200_OK)
+class VideoListView(APIView):
+    """List all videos"""
+    permission_classes = [IsAuthenticated]
 
-# UPDATE - Update video details
-@api_view(['PUT', 'PATCH'])
-def update_video(request, pk):
-    video = get_object_or_404(Video, pk=pk)
-    partial = request.method == 'PATCH'
-    serializer = VideoSerializer(video, data=request.data, partial=partial, context={'request': request})
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    return Response(serializer.errors, status=status.HTTP_400_ok)
+    def get(self, request):
+        """Retrieve all videos"""
+        videos = Video.objects.all().order_by('-uploaded_at')
+        serializer = VideoSerializer(
+            videos,
+            many=True,
+            context={'request': request}
+        )
+        return Response(
+            {
+                'status': 'success',
+                'count': videos.count(),
+                'data': serializer.data
+            },
+            status=status.HTTP_200_OK
+        )
 
-# DELETE - Delete a video by ID
-@api_view(['DELETE'])
-def delete_video(request, pk):
-    video = get_object_or_404(Video, pk=pk)
-    video.delete()
-    return Response(status=status.HTTP_204_NO_CONTENT)
 
+class VideoDetailView(APIView):
+    """Handle individual video operations"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, video_id):
+        """Retrieve a specific video"""
+        video = get_object_or_404(Video, id=video_id)
+        serializer = VideoSerializer(video, context={'request': request})
+        return Response(
+            {
+                'status': 'success',
+                'data': serializer.data
+            },
+            status=status.HTTP_200_OK
+        )
+
+    def patch(self, request, video_id):
+        """Update video metadata (title, description)"""
+        video = get_object_or_404(Video, id=video_id)
+        
+        # Check if user is the owner
+        if video.uploaded_by != request.user:
+            return Response(
+                {
+                    'status': 'error',
+                    'message': 'You do not have permission to update this video'
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = VideoSerializer(
+            video,
+            data=request.data,
+            partial=True,
+            context={'request': request}
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {
+                    'status': 'success',
+                    'message': 'Video updated successfully',
+                    'data': serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+        return Response(
+            {
+                'status': 'error',
+                'message': 'Update failed',
+                'errors': serializer.errors
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def delete(self, request, video_id):
+        """Delete a video"""
+        video = get_object_or_404(Video, id=video_id)
+        
+        # Check if user is the owner
+        if video.uploaded_by != request.user:
+            return Response(
+                {
+                    'status': 'error',
+                    'message': 'You do not have permission to delete this video'
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        video.delete()
+        return Response(
+            {
+                'status': 'success',
+                'message': 'Video deleted successfully'
+            },
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+
+"""
+class VideoUploadView(APIView):
+    def post(self, request):
+        return Response({
+            'status': 'success',
+            'message': 'Video uploaded'
+        }, status=status.HTTP_201_CREATED)
+
+class VideoListView(APIView):
+    def get(self, request):
+        videos = Video.objects.all().values('id', 'title', 'uploaded_at')
+        return Response({'videos': list(videos)})
+"""

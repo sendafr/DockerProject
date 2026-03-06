@@ -1,18 +1,13 @@
 from django.urls import path
-from video.views import views
-# List all videos
-path('list_videos/', views.list_videos, name='list_videos'),
+from .views import VideoUploadView, VideoListView, VideoDetailView
 
-# Video upload endpoint
-path('create_video/', views.create_video, name='create_video'),
-    
-# Get a specific video by ID
-path('<int:pk>/', views.get_video, name='get_video'),
-    
-# Update a specific video by ID
-path('videos/<int:pk>/', views.update_video, name='update_video'),
-    
-# Delete a specific video by ID (optional)
-path('videos/<int:pk>/', views.delete_video, name='delete_video'),
+app_name = 'video'
 
-   
+urlpatterns = [
+    # List and upload videos
+    path('videos/', VideoListView.as_view(), name='video-list'),
+    path('videos/upload/', VideoUploadView.as_view(), name='video-upload'),
+    
+    # Detail, update, delete videos
+    path('videos/<int:video_id>/', VideoDetailView.as_view(), name='video-detail'),
+]
