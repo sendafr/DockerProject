@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { profileAPI } from './api2';
 import { useAuthentication } from '../Auth';
 import styles from './Home.module.css';
+import VideoUload from './Components/VideoUload.jsx';
 
 export default function Home() {
   const { logout }              = useAuthentication();
@@ -121,6 +122,8 @@ export default function Home() {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
+    <>
+    <VideoUload/>
     <div className={styles.page}>
       <div className={styles.container}>
 
@@ -324,5 +327,6 @@ export default function Home() {
 
       </div>
     </div>
+    </>
   );
 }
