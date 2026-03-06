@@ -14,7 +14,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Navbar />
-      <VideoUpload/>
+     
       <Routes>
         {/* Public Routes */}
         <Route path="/login"    element={<AuthsForm mode="login"    />} />

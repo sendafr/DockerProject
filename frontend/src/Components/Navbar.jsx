@@ -111,57 +111,61 @@ import '../styles/navbar2.css';
       </div>
 
       {/* ── Mobile Menu ── */}
-      <div className="mobileMenu">
-        <Link
-          to="/"
-          className="mobileLink"
-          onClick={() => setMenuOpen(false)}
-        >
-          Home
-        </Link>
+      {/* ── Mobile Menu ── */}
+<div className={`mobileMenu ${menuOpen ? 'mobileMenuOpen' : ''}`}>
+  <Link
+    to="/"
+    className="mobileLink"
+    onClick={() => setMenuOpen(false)}
+  >
+    Home
+  </Link>
 
-        {isAuth ? (
-          <>
-            <button
-              onClick={handleVideoUploadClick}
-              className="mobileLink videoUploadBtn"
-            >
-              📹 Upload Video
-            </button>
-            <Link
-              to="/profile"
-              className="mobileLink"
-              onClick={() => setMenuOpen(false)}
-            >
-              Profile
-            </Link>
-            <button
-              className="mobileLogoutBtn"
-              onClick={() => {
-                handleLogout();
-                setMenuOpen(false);
-              }}
-              disabled={loggingOut}
-            >
-              {loggingOut ? 'Logging out...' : 'Logout'}
-            </button>
-          </>
-        ) : (
-          <>
-            <Link
-              to="/login"
-              className="mobileLink"
-              onClick={() => setMenuOpen(false)}
-            >
-              Login
-            </Link>
-            <Link
-              to="/register"
-              className="mobileLink"
-              onClick={() => setMenuOpen(false)}
-            />
-            </>
-        )}</div>
+  {isAuth ? (
+    <>
+      <button
+        onClick={handleVideoUploadClick}
+        className="mobileLink videoUploadBtn"
+      >
+        📹 Upload Video
+      </button>
+      <Link
+        to="/profile"
+        className="mobileLink"
+        onClick={() => setMenuOpen(false)}
+      >
+        Profile
+      </Link>
+      <button
+        className="mobileLogoutBtn"
+        onClick={() => {
+          handleLogout();
+          setMenuOpen(false);
+        }}
+        disabled={loggingOut}
+      >
+        {loggingOut ? 'Logging out...' : 'Logout'}
+      </button>
+    </>
+  ) : (
+    <>
+      <Link
+        to="/login"
+        className="mobileLink"
+        onClick={() => setMenuOpen(false)}
+      >
+        Login
+      </Link>
+      <Link
+        to="/register"
+        className="mobileLink"
+        onClick={() => setMenuOpen(false)}
+      >
+        Register
+      </Link>
+    </>
+  )}
+</div>
         </nav>
         )
 } 
