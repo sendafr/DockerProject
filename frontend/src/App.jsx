@@ -20,7 +20,7 @@ export default function App() {
         <Route path="/login"    element={<AuthsForm mode="login"    />} />
         <Route path="/register" element={<AuthsForm mode="register" />} />
         <Route path="/authsForm" element={<AuthsForm  />} />
-        <Route path="/videoupload" element={<VideoUpload/>} />
+        <Route path="/videoUpload" element={<VideoUpload/>} />
 
         {/* Protected Routes */}
         <Route path="/" element={
