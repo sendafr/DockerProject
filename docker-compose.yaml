@@ -18,7 +18,7 @@ services:
       context: .
       dockerfile: Dockerfile-backend
     environment:
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_SECRET_KEY=os.environ.get('MY_KEY', 'fallback-key')
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
