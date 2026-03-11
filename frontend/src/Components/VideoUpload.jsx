@@ -11,6 +11,17 @@ const VideoUpload = () => {
   const [error, setError] = useState(null);
   const [preview, setPreview] = useState(null);
 
+  // Get JWT token from localStorage
+  const getAuthToken = () => {
+    const token = localStorage.getItem('access_token');
+    return token ? `Bearer ${token}` : null;
+  };
+
+  // Configure axios with JWT token
+  useEffect(() => {
+    axios.defaults.headers.common['Authorization'] = getAuthToken();
+  }, []);
+
   // Fetch videos on component mount
   useEffect(() => {
     fetchVideos();
@@ -28,19 +39,29 @@ const VideoUpload = () => {
   const fetchVideos = async () => {
     try {
       setLoading(true);
-      // backend returns an envelope {status, count, data:[...]} so unwrap it
-      const response = await axios.get('/api/videos/');
+      const token = getAuthToken();
+      if (!token) {
+        setError('Authentication required');
+        return;
+      }
+
+      const response = await axios.get('/api/videos/', {
+        headers: {
+          'Authorization': token
+        }
+      });
+      
+      // Handle API envelope response
       const list = response.data?.data;
       if (Array.isArray(list)) {
         setVideos(list);
       } else {
-        // defensive fallback in case we received something unexpected
         console.warn('fetchVideos: expected array, got', list);
         setVideos([]);
       }
       setError(null);
     } catch (err) {
-      setError('Failed to fetch videos');
+      setError(err.response?.data?.detail || 'Failed to fetch videos');
       console.error(err);
     } finally {
       setLoading(false);
@@ -48,7 +69,7 @@ const VideoUpload = () => {
   };
 
   const handleFileChange = (e) => {
-    const selectedFile = e.target.files && e.target.files[0];
+    const selectedFile = e.target.files && e.target.files;
     if (selectedFile) {
       // Validate file type
       if (!selectedFile.type.startsWith('video/')) {
@@ -70,6 +91,12 @@ const VideoUpload = () => {
 
     try {
       setLoading(true);
+      const token = getAuthToken();
+      if (!token) {
+        setError('Authentication required');
+        return;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('title', title);
@@ -77,19 +104,24 @@ const VideoUpload = () => {
 
       const response = await axios.post('/api/videos/', formData, {
         headers: {
+          'Authorization': token,
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      // API returns envelope, insert the actual video data
+      // Handle API envelope response
       const newVideo = response.data?.data || response.data;
-      setVideos([newVideo, ...videos]);
-      setFile(null);
-      setTitle('');
-      setDescription('');
-      setPreview(null);
-      setError(null);
-      alert('Video uploaded successfully!');
+      if (newVideo) {
+        setVideos([newVideo, ...videos]);
+        setFile(null);
+        setTitle('');
+        setDescription('');
+        setPreview(null);
+        setError(null);
+        alert('Video uploaded successfully!');
+      } else {
+        setError('Upload failed: Invalid response format');
+      }
     } catch (err) {
       setError(err.response?.data?.detail || 'Upload failed');
       console.error(err);
@@ -98,16 +130,7 @@ const VideoUpload = () => {
     }
   };
 
-  // const handleClearForm = () => {
-  //   setFile(null);
-  //   setTitle('');
-  //   setDescription('');
-  //   setPreview(null);
-  //   setError(null);
-  // };
-
   const handleEdit = (video) => {
-    // editing functionality not implemented yet
     console.log('edit video', video);
     alert('Edit feature coming soon');
   };
@@ -118,7 +141,17 @@ const VideoUpload = () => {
     }
 
     try {
-      await axios.delete(`/api/videos/${videoId}/`);
+      const token = getAuthToken();
+      if (!token) {
+        setError('Authentication required');
+        return;
+      }
+
+      await axios.delete(`/api/videos/${videoId}/`, {
+        headers: {
+          'Authorization': token
+        }
+      });
       setVideos(videos.filter((v) => v.id !== videoId));
     } catch (err) {
       setError('Failed to delete video');
@@ -168,50 +201,62 @@ const VideoUpload = () => {
               accept="video/*"
               onChange={handleFileChange}
             />
-            </div>
-            </form>
           </div>
 
-          {/* ─── Video List ────────────────────────────────────────────── */}
-          {videos.length > 0 && (
-            <div className="video-list">
-              {videos.map((video) => (
-                <div key={video.id} className="video-item">
-                  <h3>{video.title}</h3>
-                  <p>{video.description}</p>
-                  <div className="video-dates">
-                    <small>
-                      Created: {new Date(video.created_at).toLocaleDateString()}
-                    </small>
-                  </div>
-                  <div className="video-actions">
-                    <a
-                      href={video.video_file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-link"
-                    >
-                      Watch
-                    </a>
-                    <button
-                      onClick={() => handleEdit(video)}
-                      className="btn btn-edit"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(video.id)}
-                      className="btn btn-delete"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={loading || !file || !title.trim()}
+          >
+            {loading ? 'Uploading...' : 'Upload Video'}
+          </button>
+        </form>
+      </div>
+
+      {/* Video List */}
+      {videos.length > 0 ? (
+        <div className="video-list">
+          {videos.map((video) => (
+            <div key={video.id} className="video-item">
+              <h3>{video.title}</h3>
+              <p>{video.description}</p>
+              <div className="video-dates">
+                <small>
+                  Created: {new Date(video.created_at).toLocaleDateString()}
+                </small>
+              </div>
+              <div className="video-actions">
+                <a
+                  href={video.video_file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-link"
+                >
+                  Watch
+                </a>
+                <button
+                  onClick={() => handleEdit(video)}
+                  className="btn btn-edit"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(video.id)}
+                  className="btn btn-delete"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
-          )}
+          ))}
         </div>
-      );
+      ) : (
+        <div className="no-videos">
+          {loading ? 'Loading videos...' : 'No videos uploaded yet'}
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default VideoUpload;
