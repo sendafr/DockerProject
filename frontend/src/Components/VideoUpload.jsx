@@ -28,7 +28,7 @@ const VideoUpload = () => {
   const fetchVideos = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/videos/');
+      const response = await axios.get('/videos/');
       setVideos(response.data);
       setError(null);
     } catch (err) {
