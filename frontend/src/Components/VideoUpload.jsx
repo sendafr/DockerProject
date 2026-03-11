@@ -45,7 +45,7 @@ const VideoUpload = () => {
         return;
       }
 
-      const response = await axios.get('/api/videos/', {
+      const response = await axios.get('/videos/', {
         headers: {
           'Authorization': token
         }
@@ -102,7 +102,7 @@ const VideoUpload = () => {
       formData.append('title', title);
       formData.append('description', description);
 
-      const response = await axios.post('/api/videos/', formData, {
+      const response = await axios.post('/videos/upload/', formData, {
         headers: {
           'Authorization': token,
           'Content-Type': 'multipart/form-data',
