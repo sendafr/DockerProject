@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { profileAPI } from './api2';
 import { useAuthentication } from '../Auth';
 import styles from './Home.module.css';
-import VideoUload from './Components/VideoUload.jsx';
+import VideoUpload from './VideoUpload';
 
 export default function Home() {
   const { logout }              = useAuthentication();
@@ -123,8 +123,8 @@ export default function Home() {
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <>
-    <VideoUload/>
-    <div className={styles.page}>
+      <VideoUpload />
+      <div className={styles.page}>
       <div className={styles.container}>
 
         {/* ── Welcome Banner ── */}

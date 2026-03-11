@@ -1,57 +1,93 @@
-
+version: '3.9'
 
 services:
+  # ─── PostgreSQL Database ──────────────────────────────────────────────────
   db:
-    image: postgres:15
+    image: postgres:15-alpine
+    container_name: auth_db
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-authdb}
+      POSTGRES_USER: ${DB_USER:-authuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-authpass123}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-authuser}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - auth_network
 
-  api:
+  # ─── Django Backend ───────────────────────────────────────────────────────
+  backend:
     build:
-      context: .
-      dockerfile: Dockerfile-backend
-    environment:
-      - DJANGO_SECRET_KEY=os.environ.get('MY_KEY', 'fallback-key')
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_HOST=db
-      - DB_PORT=5432
-      - ALLOWED_HOSTS=localhost,127.0.0.1,api,0.0.0.0
-      - DEBUG=True
-      - CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://localhost:5173
-      - CORS_ALLOWED_ORIGINS=http://localhost:5173
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
-    depends_on:
-      - db
-    volumes:
-      - ./src_authentic:/src_authentic
-    restart: unless-stopped
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: auth_backend
     command: >
       sh -c "python manage.py migrate &&
-             gunicorn --bind 0.0.0.0:8000 authentic.wsgi:application"
+             python manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 120 core.wsgi:application"
+    environment:
+      DEBUG: ${DEBUG:-False}
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: ${DB_NAME:-authdb}
+      DB_USER: ${DB_USER:-authuser}
+      DB_PASSWORD: ${DB_PASSWORD:-authpass123}
+      DB_HOST: db
+      DB_PORT: 5432
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://frontend}
+    volumes:
+      - ./backend:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/admin/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - auth_network
+    restart: unless-stopped
 
+  # ─── React Frontend ───────────────────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile-frontend
+      dockerfile: Dockerfile
+    container_name: auth_frontend
     environment:
-      - VITE_API_BASE_URL=http://localhost:8000/api
+      VITE_API_BASE_URL: /api
     ports:
-      - "5173:80"
+      - "80:80"
     depends_on:
-      - api
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - auth_network
     restart: unless-stopped
 
 volumes:
   postgres_data:
+    driver: local
+  static_volume:
+    driver: local
+  media_volume:
+    driver: local
+
+networks:
+  auth_network:
+    driver: bridge
