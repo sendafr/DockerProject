@@ -30,7 +30,10 @@ SECRET_KEY = os.environ.get('MY_KEY', 'fallback-key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG','False')== 'True'
 
-ALLOWED_HOSTS =os.environ.get('ALLOWED_HOSTS', 'localhost, 127.0.0.1, ').split(',')
+# parse the comma‑separated environment variable and strip whitespace
+# fall back to a minimal set of hosts if the variable isn't defined
+raw_allowed = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1')
+ALLOWED_HOSTS = [h.strip() for h in raw_allowed.split(',') if h.strip()]
 
 
 # Application definition

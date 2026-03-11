@@ -28,8 +28,16 @@ const VideoUpload = () => {
   const fetchVideos = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/videos/');
-      setVideos(response.data);
+      // backend returns an envelope {status, count, data:[...]} so unwrap it
+      const response = await axios.get('/api/videos/');
+      const list = response.data?.data;
+      if (Array.isArray(list)) {
+        setVideos(list);
+      } else {
+        // defensive fallback in case we received something unexpected
+        console.warn('fetchVideos: expected array, got', list);
+        setVideos([]);
+      }
       setError(null);
     } catch (err) {
       setError('Failed to fetch videos');
@@ -73,7 +81,9 @@ const VideoUpload = () => {
         },
       });
 
-      setVideos([response.data, ...videos]);
+      // API returns envelope, insert the actual video data
+      const newVideo = response.data?.data || response.data;
+      setVideos([newVideo, ...videos]);
       setFile(null);
       setTitle('');
       setDescription('');
