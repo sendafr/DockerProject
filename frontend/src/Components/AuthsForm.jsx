@@ -48,6 +48,8 @@ function AuthsForm({ mode }) {
 
         localStorage.setItem('access_token',  data.access);
         localStorage.setItem('refresh_token', data.refresh);
+        // dispatch synthetic storage event so useAuthentication hook notices change
+        setTimeout(() => window.dispatchEvent(new Event('storage')), 0);
         navigate('/');
 
       } else {
