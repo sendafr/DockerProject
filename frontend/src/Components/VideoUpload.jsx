@@ -40,7 +40,7 @@ const VideoUpload = () => {
   };
 
   const handleFileChange = (e) => {
-    const selectedFile = e.target.files;
+    const selectedFile = e.target.files && e.target.files[0];
     if (selectedFile) {
       // Validate file type
       if (!selectedFile.type.startsWith('video/')) {
