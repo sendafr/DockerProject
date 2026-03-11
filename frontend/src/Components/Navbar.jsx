@@ -34,7 +34,8 @@ import '../styles/navbar2.css';
       navigate('/login');
       return;
     }
-    setShowVideoModal(true);
+    // navigate to dedicated upload route
+    navigate('/videoUpload');
     setMenuOpen(false);
   };
 

@@ -88,14 +88,19 @@ const VideoUpload = () => {
     }
   };
 
-  {/*const handleClearForm = () => {
-    setFile(null);
-    setTitle('');
-    setDescription('');
-    setPreview(null);
-    setError(null);
+  // const handleClearForm = () => {
+  //   setFile(null);
+  //   setTitle('');
+  //   setDescription('');
+  //   setPreview(null);
+  //   setError(null);
+  // };
+
+  const handleEdit = (video) => {
+    // editing functionality not implemented yet
+    console.log('edit video', video);
+    alert('Edit feature coming soon');
   };
-  */}
 
   const handleDelete = async (videoId) => {
     if (!window.confirm('Are you sure you want to delete this video?')) {
@@ -154,37 +159,49 @@ const VideoUpload = () => {
               onChange={handleFileChange}
             />
             </div>
+            </form>
+          </div>
 
-            <div className="video-dates">
-                  <small>Created: {new Date(video.created_at).toLocaleDateString()}</small>
+          {/* ─── Video List ────────────────────────────────────────────── */}
+          {videos.length > 0 && (
+            <div className="video-list">
+              {videos.map((video) => (
+                <div key={video.id} className="video-item">
+                  <h3>{video.title}</h3>
+                  <p>{video.description}</p>
+                  <div className="video-dates">
+                    <small>
+                      Created: {new Date(video.created_at).toLocaleDateString()}
+                    </small>
+                  </div>
+                  <div className="video-actions">
+                    <a
+                      href={video.video_file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-link"
+                    >
+                      Watch
+                    </a>
+                    <button
+                      onClick={() => handleEdit(video)}
+                      className="btn btn-edit"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(video.id)}
+                      className="btn btn-delete"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-                
-                <div className="video-actions">
-                  <a 
-                    href={video.video_file_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="btn btn-link"
-                  >
-                    Watch
-                  </a>
-                  <button 
-                    onClick={() => handleEdit(videos)}
-                    className="btn btn-edit"
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(videos.id)}
-                    className="btn btn-delete"
-                  >
-                    Delete
-                  </button>
-                </div>
-            
-          </form>
-          </div>
-          </div>
-  )
-}
-export default VideoUpload
+              ))}
+            </div>
+          )}
+        </div>
+      );
+};
+
+export default VideoUpload;
