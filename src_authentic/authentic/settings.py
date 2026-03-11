@@ -145,7 +145,7 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME":timedelta(minutes=30),
-    "REFLESH_TOKEN_LIFETIME":timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME":timedelta(days=1),
 }
 
 
@@ -173,6 +173,18 @@ MEDIA_ROOT = os.path.join(BASE_DIR,'media')
 
 
 #default primary key field-type
+# Video Upload Settings
+VIDEO_UPLOAD_MAX_SIZE = 500 * 1024 * 1024  # 500MB
+ALLOWED_VIDEO_EXTENSIONS = ['mp4', 'avi', 'mov', 'mkv', 'flv', 'webm']
+
+# File upload settings
+FILE_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB
+
+
+
+# Ensure media directory exists
+os.makedirs(MEDIA_ROOT, exist_ok=True)
  
 #CORS_ORIGINS_ALLOW_ALL=True
 # CORS Configuration

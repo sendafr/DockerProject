@@ -1,7 +1,4 @@
-
-
 services:
-  # ─── PostgreSQL Database ──────────────────────────────────────────────────
   db:
     image: postgres:15-alpine
     container_name: auth_db
@@ -21,20 +18,19 @@ services:
     networks:
       - auth_network
 
-  # ─── Django Backend ───────────────────────────────────────────────────────
-  src_authentic:
+  api:
     build:
       context: ./src_authentic
       dockerfile: Dockerfile
-    container_name: auth_backend
+    container_name: authentication-api
     command: >
       sh -c "python manage.py migrate &&
              python manage.py collectstatic --noinput &&
-             gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 120 core.wsgi:application"
+             gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 300 --max-requests 1000 --keep-alive 75 authentic.wsgi:application"
     environment:
       DEBUG: ${DEBUG:-False}
       SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,backend,api}
       DB_ENGINE: django.db.backends.postgresql
       DB_NAME: ${DB_NAME:-authdb}
       DB_USER: ${DB_USER:-authuser}
@@ -42,6 +38,7 @@ services:
       DB_HOST: db
       DB_PORT: 5432
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://frontend}
+      VIDEO_UPLOAD_MAX_SIZE: 524288000  # 500MB
     volumes:
       - ./src_authentic:/app
       - static_volume:/app/staticfiles
@@ -52,7 +49,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/admin/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -61,33 +58,21 @@ services:
       - auth_network
     restart: unless-stopped
 
-  # ─── React Frontend ───────────────────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: auth_frontend
+    container_name: authentication-frontend
     environment:
-      VITE_API_BASE_URL: /api
+      VITE_API_BASE_URL: http://api:8000/api
+      VITE_UPLOAD_TIMEOUT: 600000
     ports:
       - "80:80"
     depends_on:
-      - backend
+      - api
     volumes:
       - ./frontend:/app
       - /app/node_modules
     networks:
       - auth_network
     restart: unless-stopped
-
-volumes:
-  postgres_data:
-    driver: local
-  static_volume:
-    driver: local
-  media_volume:
-    driver: local
-
-networks:
-  auth_network:
-    driver: bridge
