@@ -30,6 +30,14 @@ class VideoSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.file.url)
         return None
 
+    def create(self, validated_data):
+        # ensure the uploader is set either from validated_data or the request
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user and 'uploaded_by' not in validated_data:
+            validated_data['uploaded_by'] = request.user
+        # delegate to default implementation which handles object creation
+        return super().create(validated_data)
+
     def get_file_size(self, obj):
         """Return file size in MB"""
         if obj.file:

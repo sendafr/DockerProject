@@ -21,6 +21,8 @@ class VideoUploadView(APIView):
             context={'request': request}
         )
         if serializer.is_valid():
+            # the serializer will populate uploaded_by from request.user if
+            # it's missing, so we don't need to send it explicitly here.
             serializer.save()
             return Response(
                 {

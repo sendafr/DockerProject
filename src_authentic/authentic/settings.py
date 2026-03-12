@@ -181,10 +181,12 @@ VIDEO_UPLOAD_MAX_SIZE = 500 * 1024 * 1024  # 500MB
 ALLOWED_VIDEO_EXTENSIONS = ['mp4', 'avi', 'mov', 'mkv', 'flv', 'webm']
 
 # File upload settings
-# remove hard cap so videos of arbitrary size can be uploaded; Nginx/Gunicorn
-# and frontend should still enforce practical limits if desired.
-FILE_UPLOAD_MAX_MEMORY_SIZE = None  # unlimited
-DATA_UPLOAD_MAX_MEMORY_SIZE = None  # unlimited
+# Django requires these values to be integers; setting to None causes a
+# TypeError inside the multipart parser.  500 errors were occurring when
+# they were None, so revert to a large value (500 MB) that should cover our
+# use case while still preventing runaway uploads.
+FILE_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB
 
 
 
