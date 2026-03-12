@@ -52,7 +52,12 @@ const VideoUpload = () => {
       });
       
       // Handle API envelope response
-      const list = response.data?.data;
+      // try to support different API shapes: some endpoints wrap
+      // the array in `data`, others return it directly.
+      let list = response.data?.data;
+      if (!Array.isArray(list) && Array.isArray(response.data)) {
+        list = response.data;
+      }
       if (Array.isArray(list)) {
         setVideos(list);
       } else {
@@ -69,8 +74,9 @@ const VideoUpload = () => {
   };
 
   const handleFileChange = (e) => {
-    const selectedFile = e.target.files && e.target.files;
-    if (selectedFile) {
+    const fileList = e.target.files;
+    if (fileList && fileList.length > 0) {
+      const selectedFile = fileList[0];
       // Validate file type
       if (!selectedFile.type.startsWith('video/')) {
         setError('Please select a valid video file');
