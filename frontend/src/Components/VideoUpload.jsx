@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_BASE_URL from './config';
 import './videoUpload.css';
 
 const VideoUpload = () => {
@@ -17,9 +18,11 @@ const VideoUpload = () => {
     return token ? `Bearer ${token}` : null;
   };
 
-  // Configure axios with JWT token
+  // Configure axios with JWT token and base URL
   useEffect(() => {
     axios.defaults.headers.common['Authorization'] = getAuthToken();
+    // ensure every request hits the Django API proxy
+    axios.defaults.baseURL = API_BASE_URL;
   }, []);
 
   // Fetch videos on component mount
@@ -45,23 +48,27 @@ const VideoUpload = () => {
         return;
       }
 
-      const response = await axios.get('/videos/', {
-        headers: {
-          'Authorization': token
-        }
-      });
-      
-      // Handle API envelope response
-      // try to support different API shapes: some endpoints wrap
-      // the array in `data`, others return it directly.
-      let list = response.data?.data;
-      if (!Array.isArray(list) && Array.isArray(response.data)) {
-        list = response.data;
+      const response = await axios.get('/videos/');
+
+      // normalize a few shapes we know the backend has returned in the past
+      const respData = response.data;
+      let list;
+
+      if (Array.isArray(respData)) {
+        // some legacy endpoints returned a raw array
+        list = respData;
+      } else if (Array.isArray(respData.data)) {
+        // current API wraps the array in `data`
+        list = respData.data;
+      } else if (Array.isArray(respData.videos)) {
+        // older commented‑out view returned { videos: [...] }
+        list = respData.videos;
       }
+
       if (Array.isArray(list)) {
         setVideos(list);
       } else {
-        console.warn('fetchVideos: expected array, got', list);
+        console.warn('fetchVideos: expected array, got', respData);
         setVideos([]);
       }
       setError(null);
@@ -77,8 +84,8 @@ const VideoUpload = () => {
     const fileList = e.target.files;
     if (fileList && fileList.length > 0) {
       const selectedFile = fileList[0];
-      // Validate file type
-      if (!selectedFile.type.startsWith('video/')) {
+      // Validate file type (some browsers leave type blank)
+      if (!selectedFile.type || !selectedFile.type.startsWith('video/')) {
         setError('Please select a valid video file');
         return;
       }
@@ -153,7 +160,7 @@ const VideoUpload = () => {
         return;
       }
 
-      await axios.delete(`/api/videos/${videoId}/`, {
+      await axios.delete(`/videos/${videoId}/`, {
         headers: {
           'Authorization': token
         }
