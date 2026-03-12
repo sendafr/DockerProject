@@ -44,12 +44,8 @@ const VideoUpload = () => {
   const fetchVideos = async () => {
     try {
       setLoading(true);
-      const token = getAuthToken();
-      if (!token) {
-        setError('Authentication required');
-        return;
-      }
-
+      // don't block unauthenticated users from seeing the list;
+      // backend will return 401 or empty if not allowed
       const response = await axios.get('/videos/');
 
       // normalize a few shapes we know the backend has returned in the past
@@ -113,21 +109,16 @@ const VideoUpload = () => {
     try {
       setLoading(true);
       const token = getAuthToken();
-      if (!token) {
-        setError('Authentication required');
-        return;
-      }
-
       const formData = new FormData();
       formData.append('file', file);
       formData.append('title', title);
       formData.append('description', description);
 
+      const headers = { 'Content-Type': 'multipart/form-data' };
+      if (token) headers.Authorization = token;
+
       const response = await axios.post('/videos/upload/', formData, {
-        headers: {
-          'Authorization': token,
-          'Content-Type': 'multipart/form-data',
-        },
+        headers,
       });
 
       // API returns {status,message,data}
@@ -166,16 +157,8 @@ const VideoUpload = () => {
 
     try {
       const token = getAuthToken();
-      if (!token) {
-        setError('Authentication required');
-        return;
-      }
-
-      await axios.delete(`/videos/${videoId}/`, {
-        headers: {
-          'Authorization': token
-        }
-      });
+      const headers = token ? { Authorization: token } : {};
+      await axios.delete(`/videos/${videoId}/`, { headers });
       setVideos(videos.filter((v) => v.id !== videoId));
     } catch (err) {
       setError('Failed to delete video');
