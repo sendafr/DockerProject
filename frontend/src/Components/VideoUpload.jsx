@@ -1,164 +1,303 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
-// video model fields: id, title, description, file (URL), uploaded_by, uploaded_at
-const API_BASE = 'http://localhost:8000';
-const LIST_URL = `${API_BASE}/list_videos/`;
-// backend endpoint is defined as create_video/ (singular)
-const CREATE_URL = `${API_BASE}/create_video/`;
+import API_BASE_URL from '../config'; // config lives one level up
+import './videoUpload.css';
 
 const VideoUpload = () => {
+  // debug
+  console.log('VideoUpload component rendered');
   const [videos, setVideos] = useState([]);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    file: null,
-  });
-  const [editing, setEditing] = useState(null); // the video object we're editing
+  const [file, setFile] = useState(null);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [preview, setPreview] = useState(null);
 
+  // Get JWT token from localStorage
+  const getAuthToken = () => {
+    const token = localStorage.getItem('access_token');
+    return token ? `Bearer ${token}` : null;
+  };
+
+  // Configure axios with JWT token and base URL
+  useEffect(() => {
+    axios.defaults.headers.common['Authorization'] = getAuthToken();
+    // ensure every request hits the Django API proxy
+    axios.defaults.baseURL = API_BASE_URL;
+  }, []);
+
+  // Fetch videos on component mount
   useEffect(() => {
     fetchVideos();
   }, []);
 
+  // Generate preview when file is selected
+  useEffect(() => {
+    if (file) {
+      const videoUrl = URL.createObjectURL(file);
+      setPreview(videoUrl);
+      return () => URL.revokeObjectURL(videoUrl);
+    }
+  }, [file]);
+
   const fetchVideos = async () => {
     try {
-      const resp = await axios.get(LIST_URL);
-      setVideos(resp.data);
-      setError(null);
-    } catch (err) {
-      console.error(err);
-      setError('Could not load videos');
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({ title: '', description: '', file: null });
-    setEditing(null);
-    setError(null);
-  };
-
-  const handleInput = (e) => {
-    const { name, value } = e.target;
-    setFormData((f) => ({ ...f, [name]: value }));
-  };
-
-  const handleFile = (e) => {
-    setFormData((f) => ({ ...f, file: e.target.files[0] }));
-    setError(null);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.title) {
-      setError('Title is required');
-      return;
-    }
-
-    const payload = new FormData();
-    payload.append('title', formData.title);
-    payload.append('description', formData.description);
-    if (formData.file) payload.append('file', formData.file);
-
-    try {
       setLoading(true);
-      setError(null);
-      if (editing) {
-        // update
-        await axios.patch(`${API_BASE}/videos/${editing.id}/`, payload, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        alert('Video updated');
-      } else {
-        // create
-        await axios.post(CREATE_URL, payload, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        alert('Video created');
+      const token = getAuthToken();
+      if (!token) {
+        setError('Authentication required');
+        return;
       }
-      resetForm();
-      fetchVideos();
+
+      const response = await axios.get('/videos/');
+
+      // normalize a few shapes we know the backend has returned in the past
+      const respData = response.data;
+      let list;
+
+      if (Array.isArray(respData)) {
+        // some legacy endpoints returned a raw array
+        list = respData;
+      } else if (Array.isArray(respData.data)) {
+        // current API wraps the array in `data`
+        list = respData.data;
+      } else if (Array.isArray(respData.videos)) {
+        // older commented‑out view returned { videos: [...] }
+        list = respData.videos;
+      }
+
+      if (Array.isArray(list)) {
+        setVideos(list);
+      } else {
+        console.warn('fetchVideos: expected array, got', respData);
+        setVideos([]);
+      }
+      setError(null);
     } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to fetch videos');
       console.error(err);
-      setError('Submission failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const startEdit = (video) => {
-    setEditing(video);
-    setFormData({
-      title: video.title || '',
-      description: video.description || '',
-      file: null, // user must reselect if they want to replace
-    });
+  const handleFileChange = (e) => {
+    const fileList = e.target.files;
+    if (fileList && fileList.length > 0) {
+      const selectedFile = fileList[0];
+      // Validate file type (some browsers leave type blank)
+      if (!selectedFile.type || !selectedFile.type.startsWith('video/')) {
+        setError('Please select a valid video file');
+        setFile(null);
+        setPreview(null);
+        return;
+      }
+      setFile(selectedFile);
+      setError(null);
+    } else {
+      // user cleared the input
+      setFile(null);
+      setPreview(null);
+    }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this video?')) return;
+  const handleUpload = async (e) => {
+    e.preventDefault();
+
+    if (!file || !title.trim()) {
+      setError('Please select a file and enter a title');
+      return;
+    }
+
     try {
-      await axios.delete(`${API_BASE}/videos/${id}/`);
-      setVideos((v) => v.filter((x) => x.id !== id));
+      setLoading(true);
+      const token = getAuthToken();
+      if (!token) {
+        setError('Authentication required');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', title);
+      formData.append('description', description);
+
+      const response = await axios.post('/videos/upload/', formData, {
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      // API returns {status,message,data}
+      const newVideo = response.data?.data || response.data;
+      if (response.data?.message) {
+        alert(response.data.message);
+      }
+      if (newVideo) {
+        setVideos([newVideo, ...videos]);
+        setFile(null);
+        setTitle('');
+        setDescription('');
+        setPreview(null);
+        setError(null);
+        alert('Video uploaded successfully!');
+      } else {
+        setError('Upload failed: Invalid response format');
+      }
     } catch (err) {
+      setError(err.response?.data?.detail || 'Upload failed');
       console.error(err);
-      setError('Delete failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = (video) => {
+    console.log('edit video', video);
+    alert('Edit feature coming soon');
+  };
+
+  const handleDelete = async (videoId) => {
+    if (!window.confirm('Are you sure you want to delete this video?')) {
+      return;
+    }
+
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        setError('Authentication required');
+        return;
+      }
+
+      await axios.delete(`/videos/${videoId}/`, {
+        headers: {
+          'Authorization': token
+        }
+      });
+      setVideos(videos.filter((v) => v.id !== videoId));
+    } catch (err) {
+      setError('Failed to delete video');
+      console.error(err);
     }
   };
 
   return (
-    <div className="video-upload-page">
-      <h2>{editing ? 'Edit Video' : 'Upload a Video'}</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Title</label>
-          <input
-            name="title"
-            type="text"
-            value={formData.title}
-            onChange={handleInput}
-          />
-        </div>
-        <div>
-          <label>Description</label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleInput}
-          />
-        </div>
-        <div>
-          <label>File</label>
-          <input type="file" accept="video/*" onChange={handleFile} />
-        </div>
-        <button type="submit" disabled={loading}>
-          {loading ? 'Saving...' : editing ? 'Update' : 'Upload'}
-        </button>
-        {editing && <button onClick={resetForm}>Cancel</button>}
-      </form>
-      {error && <p className="error">{error}</p>}
+    <div className="video-upload-container">
+      <h1>Video Manager</h1>
 
-      <hr />
-      <h3>Videos</h3>
-      {videos.length === 0 && <p>No videos found</p>}
-      <ul className="video-list">
-        {videos.map((v) => (
-          <li key={v.id} className="video-item">
-            <video
-              width="320"
-              height="240"
-              controls
-              src={v.file}
-              preload="metadata"
+      {/* Error Message */}
+      {error && <div className="error-message">{error}</div>}
+
+      {/* Upload Form */}
+      <div className="upload-section">
+        <h2>Upload New Video</h2>
+        <form onSubmit={handleUpload}>
+          <div className="form-group">
+            <label htmlFor="title">Title *</label>
+            <input
+              id="title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter video title"
+              maxLength="255"
             />
-            <strong>{v.title}</strong>
-            <p>{v.description}</p>
-            <button onClick={() => startEdit(v)}>Edit</button>
-            <button onClick={() => handleDelete(v.id)}>Delete</button>
-          </li>
-        ))}
-      </ul>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="description">Description</label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter video description (optional)"
+              rows="3"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="file">Video File *</label>
+            <input
+              id="file"
+              type="file"
+              accept="video/*"
+              onChange={handleFileChange}
+            />
+          </div>
+
+          {/* Preview selected video */}
+          {preview && (
+            <div className="form-group preview-container">
+              <label>Preview</label>
+              <video
+                src={preview}
+                controls
+                className="video-preview"
+                width="100%"
+              />
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={loading || !file || !title.trim()}
+          >
+            {loading ? 'Uploading...' : 'Upload Video'}
+          </button>
+        </form>
+      </div>
+
+      {/* Video List */}
+      {videos.length > 0 ? (
+        <div className="video-list">
+          {videos.map((video) => (
+            <div key={video.id} className="video-item">
+              <h3>{video.title}</h3>
+              <p>{video.description}</p>
+              <div className="video-dates">
+                <small>
+                  Created: {new Date(video.uploaded_at).toLocaleDateString()}
+                </small>
+                {video.file_size != null && (
+                  <small>Size: {video.file_size} MB</small>
+                )}
+                {video.uploaded_by && (
+                  <small>By: {video.uploaded_by.username}</small>
+                )}
+              </div>
+              <div className="video-actions">
+                <a
+                  href={video.file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-link"
+                >
+                  Watch
+                </a>
+                <button
+                  onClick={() => handleEdit(video)}
+                  className="btn btn-edit"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(video.id)}
+                  className="btn btn-delete"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="no-videos">
+          {loading ? 'Loading videos...' : 'No videos uploaded yet'}
+        </div>
+      )}
     </div>
   );
 };
