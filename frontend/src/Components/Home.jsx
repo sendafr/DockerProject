@@ -48,6 +48,11 @@ export default function Home() {
     fetchProfile();
   }, []);
 
+  // debug logging for auth/profile state
+  useEffect(() => {
+    console.log('Home auth/network state:', { loading, error, user });
+  }, [loading, error, user]);
+
   // ─── Update Profile ───────────────────────────────────────────────────────
    const handleUpdate = async (e) => {
     e.preventDefault();
@@ -104,19 +109,25 @@ export default function Home() {
   // ─── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className={styles.centered}>
-        <div className={styles.spinner} />
-        <p>Loading profile...</p>
-      </div>
+      <>
+        <VideoUpload />
+        <div className={styles.centered}>
+          <div className={styles.spinner} />
+          <p>Loading profile...</p>
+        </div>
+      </>
     );
   }
 
-  // ─── Error ────────────────────────────────────────────────────────────────
+  // ─── Error ─────────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div className={styles.centered}>
-        <p className={styles.errorText}>{error}</p>
-      </div>
+      <>
+        <VideoUpload />
+        <div className={styles.centered}>
+          <p className={styles.errorText}>{error}</p>
+        </div>
+      </>
     );
   }
 

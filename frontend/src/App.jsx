@@ -7,7 +7,9 @@ import { isAuthenticated } from './Auth';
 
 // ─── Protected Route Wrapper ──────────────────────────────────────────────────
 const ProtectedRoute = ({ children }) => {
-  return isAuthenticated() ? children : <Navigate to="/login" replace />;
+  const auth = isAuthenticated();
+  console.log('ProtectedRoute check, authenticated?', auth);
+  return auth ? children : <Navigate to="/login" replace />;
 };
 
 export default function App() {
