@@ -27,8 +27,14 @@ from api.views import*
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    # authentication endpoints for users (login/register etc.)
     path('api/auth/', include('api.urls')),
-    path('video/auth/', include('video.urls')),
+
+    # video endpoints under the same /api/ prefix so frontend proxy works
+    # video.urls already defines "videos/" paths, so mounting at /api/ produces
+    # /api/videos/, /api/videos/upload/, etc.
+    path('api/', include('video.urls')),
 
     #path('create_user/', create_user,name="create_user"),
     #path('api/token/', TokenObtainPairView.as_view(),name="token_obtain_pair"),

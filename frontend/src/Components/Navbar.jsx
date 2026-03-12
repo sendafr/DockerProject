@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthentication } from '../Auth';
-import { authAPI } from '../pages/api2';
+import { authAPI } from './api2';
 import '../styles/navbar2.css';
 
   function Navbar() {

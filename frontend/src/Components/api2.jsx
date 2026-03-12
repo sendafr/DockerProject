@@ -3,6 +3,9 @@ import axios from 'axios';
 // base URL should default to proxy path when not provided
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
+// export for use in components that still use plain axios
+export { BASE_URL };
+
 const api2 = axios.create({
   baseURL: BASE_URL,
   headers: {
@@ -28,27 +31,24 @@ api2.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // only attempt a single retry per request
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
         const refresh = localStorage.getItem('refresh_token');
-
         if (!refresh) {
           localStorage.clear();
           window.location.href = '/login';
           return Promise.reject(error);
         }
 
-        const { data } = await axios.post(
-          `${BASE_URL}/auth/token/refresh/`,
-          { refresh }
-        );
+        // use the same instance so baseURL is applied automatically
+        const { data } = await api2.post('/auth/token/refresh/', { refresh });
 
         localStorage.setItem('access_token', data.access);
         originalRequest.headers.Authorization = `Bearer ${data.access}`;
         return api2(originalRequest);
-
       } catch (refreshError) {
         localStorage.clear();
         window.location.href = '/login';

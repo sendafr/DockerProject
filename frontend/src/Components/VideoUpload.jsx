@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import API_BASE_URL from '../config'; // config lives one level up
+import api2, { BASE_URL } from './api2'; // use configured instance (BASE_URL exported for helpers)
+
+// API_BASE_URL constant still available if needed elsewhere
 import './videoUpload.css';
 
 const VideoUpload = () => {
@@ -20,11 +22,12 @@ const VideoUpload = () => {
     return token ? `Bearer ${token}` : null;
   };
 
-  // Configure axios with JWT token and base URL
+  // no need to configure the global axios instance; use `api2` instead
+  // leave the effect here just for backwards compatibility if some library
+  // still references axios directly, but it's safe to remove entirely.
   useEffect(() => {
+    axios.defaults.baseURL = BASE_URL;
     axios.defaults.headers.common['Authorization'] = getAuthToken();
-    // ensure every request hits the Django API proxy
-    axios.defaults.baseURL = API_BASE_URL;
   }, []);
 
   // Fetch videos on component mount
@@ -46,7 +49,7 @@ const VideoUpload = () => {
       setLoading(true);
       // don't block unauthenticated users from seeing the list;
       // backend will return 401 or empty if not allowed
-      const response = await axios.get('/videos/');
+      const response = await api2.get('/videos/');
 
       // normalize a few shapes we know the backend has returned in the past
       const respData = response.data;
@@ -117,7 +120,7 @@ const VideoUpload = () => {
       const headers = { 'Content-Type': 'multipart/form-data' };
       if (token) headers.Authorization = token;
 
-      const response = await axios.post('/videos/upload/', formData, {
+      const response = await api2.post('/videos/upload/', formData, {
         headers,
       });
 
@@ -158,7 +161,7 @@ const VideoUpload = () => {
     try {
       const token = getAuthToken();
       const headers = token ? { Authorization: token } : {};
-      await axios.delete(`/videos/${videoId}/`, { headers });
+      await api2.delete(`/videos/${videoId}/`, { headers });
       setVideos(videos.filter((v) => v.id !== videoId));
     } catch (err) {
       setError('Failed to delete video');
