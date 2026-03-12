@@ -87,10 +87,16 @@ const VideoUpload = () => {
       // Validate file type (some browsers leave type blank)
       if (!selectedFile.type || !selectedFile.type.startsWith('video/')) {
         setError('Please select a valid video file');
+        setFile(null);
+        setPreview(null);
         return;
       }
       setFile(selectedFile);
       setError(null);
+    } else {
+      // user cleared the input
+      setFile(null);
+      setPreview(null);
     }
   };
 
@@ -215,6 +221,19 @@ const VideoUpload = () => {
               onChange={handleFileChange}
             />
           </div>
+
+          {/* Preview selected video */}
+          {preview && (
+            <div className="form-group preview-container">
+              <label>Preview</label>
+              <video
+                src={preview}
+                controls
+                className="video-preview"
+                width="100%"
+              />
+            </div>
+          )}
 
           <button
             type="submit"

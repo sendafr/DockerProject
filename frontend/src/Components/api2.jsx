@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+// base URL should default to proxy path when not provided
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+
 const api2 = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -38,13 +41,13 @@ api2.interceptors.response.use(
         }
 
         const { data } = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/auth/token/refresh/`,
+          `${BASE_URL}/auth/token/refresh/`,
           { refresh }
         );
 
         localStorage.setItem('access_token', data.access);
         originalRequest.headers.Authorization = `Bearer ${data.access}`;
-        return api(originalRequest);
+        return api2(originalRequest);
 
       } catch (refreshError) {
         localStorage.clear();
@@ -59,18 +62,18 @@ api2.interceptors.response.use(
 
 // ─── Auth Endpoints ───────────────────────────────────────────────────────────
 export const authAPI = {
-  register: (data) => api2.post('api/auth/register/', data),
-  login:    (data) => api2.post('api/auth/login/', data),
-  logout:   (data) => api2.post('api/auth/logout/', data),
-  refresh:  (data) => api2.post('api/auth/token/refresh/', data),
+  register: (data) => api2.post('/auth/register/', data),
+  login:    (data) => api2.post('/auth/login/', data),
+  logout:   (data) => api2.post('/auth/logout/', data),
+  refresh:  (data) => api2.post('/auth/token/refresh/', data),
 };
 
 // ─── Profile Endpoints ────────────────────────────────────────────────────────
 export const profileAPI = {
-  get:            ()     => api2.get('api/auth/profile/'),
-  update:         (data) => api2.patch('api/auth/profile/', data),
-  delete:         ()     => api2.delete('api/auth/profile/'),
-  changePassword: (data) => api2.put('api/auth/change-password/', data),
+  get:            ()     => api2.get('/auth/profile/'),
+  update:         (data) => api2.patch('/auth/profile/', data),
+  delete:         ()     => api2.delete('/auth/profile/'),
+  changePassword: (data) => api2.put('/auth/change-password/', data),
 };
 
 export default api2;
