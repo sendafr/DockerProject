@@ -12,6 +12,7 @@ services:
   
   api:
     image: ghcr.io/sendafr/authentication-api:latest
+
     environment:
       - ALLOWED_HOSTS=localhost,127.0.0.1,api,0.0.0.0
       - DEBUG=True  # Optional: helps with error messages
@@ -22,10 +23,24 @@ services:
     env_file:
       - .env
     depends_on:
-      - db
+       db:
+         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - auth_network
+    restart: unless-stopped
+
     command: gunicorn --bind 0.0.0.0:8000 authentic.wsgi:application
     volumes:
       - ./src_authentic:/src_authentic
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+
 
   frontend:
     image: ghcr.io/sendafr/authentication-frontend:latest
@@ -36,3 +51,12 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  static_volume:
+    driver: local
+  media_volume:
+    driver: local
+
+networks:
+  auth_network:
+    driver: bridge
