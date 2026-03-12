@@ -16,7 +16,6 @@ services:
     environment:
       - ALLOWED_HOSTS=localhost,127.0.0.1,api,0.0.0.0
       - DEBUG=True  # Optional: helps with error messages
-    # ... rest of your config
       - CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://localhost:5173
     ports:
       - "8000:8000"
@@ -24,7 +23,8 @@ services:
       - .env
     depends_on:
       - db
-    command: gunicorn --bind 0.0.0.0:8000 authentic.wsgi:application
+    # run migrations before starting gunicorn so tables exist
+    command: sh -c "python manage.py migrate --noinput && gunicorn --bind 0.0.0.0:8000 authentic.wsgi:application"
     volumes:
       - ./src_authentic:/src_authentic
       - static_volume:/app/staticfiles
@@ -32,11 +32,17 @@ services:
 
 
   frontend:
-    image: ghcr.io/sendafr/authentication-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    # you can still tag the image locally if desired
+    # image: authentication-frontend:local
     ports:
       - "5173:80"
     volumes:
-      - ./frontend:/frontend
+      - ./frontend:/frontend  # mounts source so nginx.conf and config.js are kept up-to-date in dev
+    depends_on:
+      - api
 
 volumes:
   postgres_data:
