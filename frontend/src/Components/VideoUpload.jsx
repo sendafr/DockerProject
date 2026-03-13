@@ -239,66 +239,63 @@ const VideoUpload = () => {
       {/* Video List */}
       {videos.length > 0 ? (
         <div className="video-list">
-          {videos.map((video) => (
-            
-            <div key={video.id} className="video-item">
-              <h3>{video.title}</h3>
-              <p>{video.description}</p>
-              <div className="video-actions">
-      {/* inline player */}
-      {video.file_url && (
-        <video src={video.file_url}  
-        controls width="100%" 
-        
-                
-                className="video-preview"
-                >{preview}</video>
-      )}
-      
-                
-              
-      <a href={video.file_url} target="_blank" rel="noopener noreferrer"
-         className="btn btn-link">
-        Open in new tab
-      </a>
-     </div>            <div className="video-dates">
-                <small>
-                  Created: {new Date(video.uploaded_at).toLocaleDateString()}
-                </small>
-                {video.file_size != null && (
-                  <small>Size: {video.file_size} MB</small>
-                )}
-                {video.uploaded_by && (
-                  <small>By: {video.uploaded_by.username}</small>
-                )}
-              </div>
-              <div className="video-actions">
-                {video.file_url && (
-                  <video src={video.file_url} controls width="100%" />
-                )}
-                <a
-                  href={video.file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-link"
-                >
-                  Watch
-                </a>
-                <button
-                  onClick={() => handleEdit(video)}
-                  className="btn btn-edit"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(video.id)}
-                  className="btn btn-delete"
-                >
-                  Delete
-                </button>
-              </div>
+          {videos.map((video) => {
+        // ensure we have a fully qualified URL; the backend now returns an
+        // absolute URI but older data may still contain a path only.
+        const url = video.file_url
+          ? video.file_url.startsWith('http')
+            ? video.file_url
+            : `${BASE_URL}${video.file_url}`
+          : null;
+
+        return (
+          <div key={video.id} className="video-item">
+            <h3>{video.title}</h3>
+            <p>{video.description}</p>
+
+            <div className="video-actions">
+              {/* inline player */}
+              {url && (
+                <video src={url} controls width="100%" className="video-preview" />
+              )}
+
+              <a href={url} target="_blank" rel="noopener noreferrer" className="btn btn-link">
+                Open in new tab
+              </a>
             </div>
-          ))}
+
+            <div className="video-dates">
+              <small>
+                Created: {new Date(video.uploaded_at).toLocaleDateString()}
+              </small>
+              {video.file_size != null && (
+                <small>Size: {video.file_size} MB</small>
+              )}
+              {video.uploaded_by && (
+                <small>By: {video.uploaded_by.username}</small>
+              )}
+            </div>
+
+            <div className="video-actions">
+              {url && <video src={url} controls width="100%" />}
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-link"
+              >
+                Watch
+              </a>
+              <button onClick={() => handleEdit(video)} className="btn btn-edit">
+                Edit
+              </button>
+              <button onClick={() => handleDelete(video.id)} className="btn btn-delete">
+                Delete
+              </button>
+            </div>
+          </div>
+        );
+      })}
         </div>
       ) : (
         <div className="no-videos">

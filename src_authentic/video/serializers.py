@@ -24,11 +24,25 @@ class VideoSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'uploaded_by', 'uploaded_at', 'file_url', 'file_size']
 
     def get_file_url(self, obj):
-        """Return the full URL for the video file"""
+        """Return the full URL for the video file.
+
+        Previously this returned a URL rooted at the frontend server
+        (`http://localhost:5173`) because the Vite dev server proxies
+        `/media` to Django.  That worked for network requests but meant
+        that clicking a link or navigating directly to the media path
+        caused the React router to treat it as an application route and
+        emit ``No routes matched location ...``.  Instead we now let
+        Django build an absolute URI which points directly at the
+        backend.  The frontend can still fetch it cross‑origin and the
+        router will remain unaffected.
+        """
         if obj.file:
-            # Hardcode the frontend URL since nginx proxies media requests
-            base_url = 'http://localhost:5173'
-            return base_url + obj.file.url
+            request = self.context.get('request')
+            if request:
+                # Use the request object so the URL matches the backend host/port
+                return request.build_absolute_uri(obj.file.url)
+            # fallback if request not available
+            return obj.file.url
         return None
 
     def create(self, validated_data):
