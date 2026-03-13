@@ -25,9 +25,10 @@ class VideoSerializer(serializers.ModelSerializer):
 
     def get_file_url(self, obj):
         """Return the full URL for the video file"""
-        request = self.context.get('request')
-        if obj.file and request:
-            return request.build_absolute_uri(obj.file.url)
+        if obj.file:
+            # Hardcode the frontend URL since nginx proxies media requests
+            base_url = 'http://localhost:5173'
+            return base_url + obj.file.url
         return None
 
     def create(self, validated_data):
