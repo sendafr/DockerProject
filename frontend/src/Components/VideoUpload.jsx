@@ -247,8 +247,16 @@ const VideoUpload = () => {
               <div className="video-actions">
       {/* inline player */}
       {video.file_url && (
-        <video src={video.file_url} controls width="100%" />
+        <video src={video.file_url}  
+        controls width="100%" 
+        
+                
+                className="video-preview"
+                >{preview}</video>
       )}
+      
+                
+              
       <a href={video.file_url} target="_blank" rel="noopener noreferrer"
          className="btn btn-link">
         Open in new tab
