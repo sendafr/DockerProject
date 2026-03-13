@@ -273,6 +273,9 @@ const VideoUpload = () => {
                 )}
               </div>
               <div className="video-actions">
+                {video.file_url && (
+                  <video src={video.file_url} controls width="100%" />
+                )}
                 <a
                   href={video.file_url}
                   target="_blank"
