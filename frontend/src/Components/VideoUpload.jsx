@@ -240,10 +240,16 @@ const VideoUpload = () => {
       {videos.length > 0 ? (
         <div className="video-list">
           {videos.map((video) => (
+            
             <div key={video.id} className="video-item">
               <h3>{video.title}</h3>
               <p>{video.description}</p>
-              <div className="video-dates">
+              <div className="video-actions">
+      {/* inline player */}
+      {video.file_url && (
+        <video src={video.file_url} controls width="100%" />
+      )}
+     </div>            <div className="video-dates">
                 <small>
                   Created: {new Date(video.uploaded_at).toLocaleDateString()}
                 </small>
