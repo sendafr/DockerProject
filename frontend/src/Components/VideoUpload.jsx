@@ -249,6 +249,10 @@ const VideoUpload = () => {
       {video.file_url && (
         <video src={video.file_url} controls width="100%" />
       )}
+      <a href={video.file_url} target="_blank" rel="noopener noreferrer"
+         className="btn btn-link">
+        Open in new tab
+      </a>
      </div>            <div className="video-dates">
                 <small>
                   Created: {new Date(video.uploaded_at).toLocaleDateString()}
