@@ -1,0 +1,57 @@
+services:
+  db:
+    image: ghcr.io/sendafr/authentication-db:latest
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+  
+  api:
+    image: ghcr.io/sendafr/authentication-api:latest
+
+    environment:
+      - ALLOWED_HOSTS=localhost,127.0.0.1,api,0.0.0.0,localhost:5173
+      - DEBUG=True  # Optional: helps with error messages
+      - CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://localhost:5173
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    # run migrations before starting gunicorn so tables exist
+    command: sh -c "python manage.py migrate --noinput && gunicorn --bind 0.0.0.0:8000 authentic.wsgi:application"
+    volumes:
+      - ./src_authentic:/src_authentic
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    # you can still tag the image locally if desired
+    # image: authentication-frontend:local
+    ports:
+      - "5173:80"
+    volumes:
+      - ./frontend:/frontend  # mounts source so nginx.conf and config.js are kept up-to-date in dev
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+    driver: local
+  static_volume:
+    driver: local
+  media_volume:
+    driver: local
+
+networks:
+  auth_network:
+    driver: bridge
